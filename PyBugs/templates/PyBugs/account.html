@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>PyBugs</title>
+    <!-- Bootstrap Core CSS -->
+    <link href="{{STATIC_URL}}css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <!-- Fonts -->
+    <link href="{{STATIC_URL}}css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+    <!-- Custom Theme CSS -->
+    <link href="{{STATIC_URL}}css/grayscale.css" rel="stylesheet" type="text/css">
+</head>
+<body id="page-top" data-spy="scroll" data-target=".navbar-custom">
+    <nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header page-scroll">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <a class="navbar-brand" href="/index/">
+                    <i class="fa fa-play-circle"></i>  <span class="light">Start</span> PyBugs
+                </a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-right navbar-main-collapse">
+                <ul class="nav navbar-nav">
+                    <!-- Hidden li included to remove active class from about link when scrolled up past about section -->
+                    <li class="hidden">
+                        <a href="#page-top"></a>
+                    </li>
+                    <li class="page-scroll">
+                       <a href="/account/">Bugs</a>
+                    </li>
+                    <li class="page-scroll">
+                        <a href="/new_bug/">Report a bug</a>
+                    </li>
+                    {% if perms.PyBugs %}
+                    {% if perms.PyBugs.can_add %}
+                    <li class="page-scroll">
+                        <a href="/create_project/">Create project</a>
+                    </li>
+                    <li class="page-scroll">
+                        <a href="/new_developer/">Add new developer</a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                    <li class="page-scroll">
+                        <a href="/logout/">Log out</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+  </nav>
+ {% block content %} 
+    <section class="intro">
+        <div class="intro-body">
+            <div class="container">
+                <div class="row">
+                                          
+
+      <p>
+          
+           {% if latest_Project_list %}
+             <select  class="form-control" value="latest_Project_list" name="latest_Project_list">
+               <option>Pick a project</option>
+               {% for project in latest_Project_list %}
+               <option  value="{{ project.id }}">{{ project.name  }} </option> 
+               {% endfor %}
+              </select>
+           {% endif %}
+        </p>
+        <p>{% csrf_token %} {% if latest_bugs_list %}
+                             <table class="table table-bordered">
+                               <thead id = "myDataHeder" class="header">
+                                  <tr class="text-center">
+                                      <td>ID</td>
+                                      <td>Summary</td>
+                                      <td>Start date</td>
+                                      <td>Status</td>
+                                      <td>Developers</td>
+                                      <td>Project manager</td>
+                                      <td>Project</td>
+                                      {% if perms.PyBugs %}
+                                      <td>Edit</td>
+                                      <td>Del</td>
+                                      {% endif %}
+                                  </tr>
+                                </thead>
+                                <tbody id ="myData" >
+                                {% for bug in latest_bugs_list %}                                 
+                                  <tr  class="text-center">
+                                      <td>{{bug.pk}}</td>
+                                      <td>{{bug.summary}}</td>
+                                      <td>{{bug.start_date}}</td>
+                                      <td>{{bug.status}}</td>
+                                      <td>
+                                      {% for developers in bug.developers.all %}
+                                      <a href = "/edit_developer/{{bug.pk}}">
+                                      {{developers}},
+                                      </a>
+                                      {% endfor %}
+                                      </td>
+                                      <td><a href = "/edit_manager/{{bug.pk}}">{{bug.project.project_manager}}</a></td>
+                                      <td>{{bug.project.name}}</td>
+                                      {% if perms.PyBugs %}
+                                      {% if perms.PyBugs.can_edit %}
+                                      <td><a href = "/edit_bug/{{bug.pk}}">Edit</a></td>
+                                      {% endif %}
+                                      {% if perms.PyBugs.can_delete %}
+                                      <td><a href = "/del_bug/{{bug.pk}}">Del</td>  
+                                      {% endif %}
+                                      {% endif %}                               
+                                  </tr>
+
+                                {% endfor %}                              
+                               </tbody>
+                             </table>
+                        {% endif %}
+                       </p>
+                     
+                
+                </div>
+            </div>
+        </div>
+     </section> 
+   
+                              
+      {% endblock %}     
+          
+  <!-- Core JavaScript Files -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="{{STATIC_URL}}js/bootstrap.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+    <!-- Custom Theme JavaScript -->
+    <script src="{{STATIC_URL}}js/grayscale.js"></script>
+                  
+          
+<script type="text/javascript">
+          $(document).ready(function(){
+             $("select[name=latest_Project_list]").change(function(){
+              project_id = $(this).val();
+                request_url = '/bugs_table/'+project_id+'/';
+                $.ajax({
+                   url: request_url,
+                   datatype:'json',
+                   success: function(data){                       
+                       $("#myData").children().remove();                       
+                       $.each(data, function(key, value){
+                          var table = $("<tr><td>" + value.pk + "</td><td>"+value.fields.summary+"</td><td>"+value.fields.start_date+"</td><td>"+value.fields.status+"</td><td>"+"<a href='/edit_developer/"+value.pk+"'>"+value.fields.developers+"</td><td>"+value.fields.project.project_manager+"</td><td>"+value.fields.project+"</td>{% if perms.PyBugs %}{% if perms.PyBugs.can_edit %}<td>"+"<a href='/edit_bug/"+value.pk+"'>"+"EDIT"+"</a></td>
+                                      {% endif %}{% if perms.PyBugs.can_delete %}<td>"+"<a href='/del_bug/"+value.pk+"'>"+"DEL"+"</a></td>{% endif %}{% endif %}</tr>").addClass('text-center');
+                       $("#myData").append(table); 
+                      });                   
+                  }  
+              });
+           })
+        });
+        </script>      
+</body>
+</html>
+    
+  
+  
+
